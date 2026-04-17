@@ -3,8 +3,6 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using HeroesApi.Models;
 using HeroesApi.Data;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.SignalR;
 
 namespace HeroesApi.Controllers
 {
@@ -30,19 +28,23 @@ namespace HeroesApi.Controllers
         }
 
         [HttpGet("demo")]
-        public ActionResult GetDemo() {
+        public ActionResult GetDemo() 
+        {
             var hero = HeroesStore.Heroes.First();
-            var defaultOptions = new JsonSerializerOptions {
+            var defaultOptions = new JsonSerializerOptions 
+            {
                 WriteIndented = true
             };
 
-            var ourOptions = new JsonSerializerOptions {
+            var ourOptions = new JsonSerializerOptions 
+            {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true,
                 Converters = { new JsonStringEnumConverter() }
             };
 
-            return Ok(new {
+            return Ok(new 
+            {
                 withDefaultSettings = JsonSerializer.Deserialize<object>(
                     JsonSerializer.Serialize(hero, defaultOptions),
                     defaultOptions
@@ -56,8 +58,10 @@ namespace HeroesApi.Controllers
         }
 
         [HttpPost("serialize")]
-        public ActionResult Serialize([FromBody] Hero hero) {
-            var options = new JsonSerializerOptions {
+        public ActionResult Serialize([FromBody] Hero hero) 
+        {
+            var options = new JsonSerializerOptions 
+            {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true,
                 Converters = { new JsonStringEnumConverter() }
@@ -66,26 +70,48 @@ namespace HeroesApi.Controllers
             string serialized = JsonSerializer.Serialize(hero, options);
             Hero deserializedHero = JsonSerializer.Deserialize<Hero>(serialized, options);
 
-
-            return Ok(new { serialized, deserializedHero });
+            return Ok(new 
+            {
+                serialized,
+                deserializedHero,
+                internalNotesAfterDeserialize = deserializedHero?.InternalNotes ?? "null - none поле было проигнорировано"
+            });
         }
 
-        var hero = new Hero {
-            Id = 99,
-            Name = "Тестовый герой",
-            RealName = "Студент",
-            Universe = Universe.Marvel,
-            PowerLevel = 50,
-            Powers = new() { "программирование", "дебаггинг" },
-            Weapon = new() { Name = "Клавиатура", IsRanged = false },
-            InternalNotes = "Это поле не попадет в JSON"
+        [HttpPost("create")]
+        public ActionResult CreateHero()
+        {
+            var hero = new Hero 
+            {
+                Id = 99,
+                Name = "Тестовый герой",
+                RealName = "Студент",
+                Universe = Universe.Marvel,
+                PowerLevel = 50,
+                Powers = new List<string> { "программирование", "дебаггинг" },
+                Weapon = new Weapon { Name = "Клавиатура", IsRanged = false },
+                InternalNotes = "Это поле не попадет в JSON"
+            };
 
+            var options = new JsonSerializerOptions 
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true,
+                Converters = { new JsonStringEnumConverter() }
+            };
 
+            string serialized = JsonSerializer.Serialize(hero, options);
+            var deserialized = JsonSerializer.Deserialize<Hero>(serialized, options);
 
-        };
+            return Ok(new 
+            {
+                serializedJson = serialized,
+                deserializedObject = deserialized,
+                internalNotesAfterDeserialize = deserialized?.InternalNotes ?? "null - none поле было проигнорировано"
+            });
+        }
 
-
-        private static readonly Hero exampleHero = new Hero
+        private static readonly Hero exampleHero = new Hero 
         {
             Id = 7,
             Name = "Дэдпул",
