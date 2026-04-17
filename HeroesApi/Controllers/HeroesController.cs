@@ -3,6 +3,8 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using HeroesApi.Models;
 using HeroesApi.Data;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.SignalR;
 
 namespace HeroesApi.Controllers
 {
@@ -19,7 +21,7 @@ namespace HeroesApi.Controllers
         [HttpGet("{id}")]
         public ActionResult<Hero> GetById(int id)
         {
-            var hero = HeroesStore.Heroes.FirstOrDefault(hero => hero.Id == id);
+            var hero = HeroesStore.Heroes.FirstOrDefault(h => h.Id == id);
             if (hero is null)
             {
                 return NotFound(new { message = $"Герой с id = {id} не найден" });
@@ -28,23 +30,19 @@ namespace HeroesApi.Controllers
         }
 
         [HttpGet("demo")]
-        public ActionResult GetDemo()
-        {
+        public ActionResult GetDemo() {
             var hero = HeroesStore.Heroes.First();
-            var defaultOptions = new JsonSerializerOptions
-            {
+            var defaultOptions = new JsonSerializerOptions {
                 WriteIndented = true
             };
 
-            var ourOptions = new JsonSerializerOptions
-            {
+            var ourOptions = new JsonSerializerOptions {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true,
                 Converters = { new JsonStringEnumConverter() }
             };
 
-            return Ok(new
-            {
+            return Ok(new {
                 withDefaultSettings = JsonSerializer.Deserialize<object>(
                     JsonSerializer.Serialize(hero, defaultOptions),
                     defaultOptions
@@ -56,6 +54,36 @@ namespace HeroesApi.Controllers
                 note = "Сравните имена полей и значение universe в двух вариантах"
             });
         }
+
+        [HttpPost("serialize")]
+        public ActionResult Serialize([FromBody] Hero hero) {
+            var options = new JsonSerializerOptions {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true,
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+            string serialized = JsonSerializer.Serialize(hero, options);
+            Hero deserializedHero = JsonSerializer.Deserialize<Hero>(serialized, options);
+
+
+            return Ok(new { serialized, deserializedHero });
+        }
+
+        var hero = new Hero {
+            Id = 99,
+            Name = "Тестовый герой",
+            RealName = "Студент",
+            Universe = Universe.Marvel,
+            PowerLevel = 50,
+            Powers = new() { "программирование", "дебаггинг" },
+            Weapon = new() { Name = "Клавиатура", IsRanged = false },
+            InternalNotes = "Это поле не попадет в JSON"
+
+
+
+        };
+
 
         private static readonly Hero exampleHero = new Hero
         {
